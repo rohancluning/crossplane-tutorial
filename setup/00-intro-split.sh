@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 set -e
 
 gum style \
@@ -42,43 +42,13 @@ rm -f .env
 # Control Plane Cluster #
 #########################
 
-kind create cluster --config kind.yaml
-
-kubectl apply \
-    --filename https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-
-##############
-# Crossplane #
-##############
-
-helm upgrade --install crossplane crossplane \
-    --repo https://charts.crossplane.io/stable \
-    --namespace crossplane-system --create-namespace --wait
-
-kubectl apply \
-    --filename providers/provider-kubernetes-incluster.yaml
-
-kubectl apply --filename providers/provider-helm-incluster.yaml
-
-kubectl apply --filename providers/dot-kubernetes.yaml
-
-kubectl apply --filename providers/dot-sql.yaml
-
-kubectl apply --filename providers/dot-app.yaml
-
-gum spin --spinner dot \
-    --title "Waiting for Crossplane providers..." -- sleep 60
-
-kubectl wait --for=condition=healthy provider.pkg.crossplane.io \
-    --all --timeout=1800s
-
 echo "## Which Hyperscaler do you want to use?" | gum format
 
 HYPERSCALER=$(gum choose "google" "aws" "azure")
 
 echo "export HYPERSCALER=$HYPERSCALER" >> .env
 
-if [[ "$HYPERSCALER" == "google" ]]; then
+if [ "$HYPERSCALER" == "google" ]; then
 
     gcloud auth login
 
@@ -136,7 +106,7 @@ spec:
       name: gcp-creds
       key: creds" | kubectl apply --filename -
 
-elif [[ "$HYPERSCALER" == "aws" ]]; then
+elif [ "$HYPERSCALER" == "aws" ]; then
 
     AWS_ACCESS_KEY_ID=$(gum input --placeholder "AWS Access Key ID" --value "$AWS_ACCESS_KEY_ID")
     echo "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
